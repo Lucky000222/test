@@ -1,7 +1,9 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
+// import HttpProxyAgent from 'https-proxy-agent'
 export async function GET(request) {
   console.log("API route called with URL:", request.url);
+
   const { searchParams } = new URL(request.url);
   const address = searchParams.get('address');
   const timestamp = searchParams.get('timestamp');
@@ -13,18 +15,12 @@ export async function GET(request) {
   }
 
   try {
-    const queryResponse = await fetch("https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=" + address + "&projectId=meme_100567380&timestamp=" + timestamp)
+    const queryResponse = await fetch("https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=" + address + "&projectId=meme_100567380&timestamp=" + timestamp,
 
-    if (!queryResponse.ok) {
-      throw new Error(`Failed to fetch token transactions: ${queryResponse.status}`);
-    }
+    )
+    // console.log(await queryResponse.text(), "queryResponse.text()", await queryResponse.status);
 
-    const queryData = await queryResponse.json();
-
-    // 检查API响应状态
-    if (queryData.status === "0") {
-      return Response.json({ error: "Etherscan API error", message: queryData.message, result: queryData.result }, { status: 400 });
-    }
+    const queryData = await queryResponse.text();
 
     // 返回结果 - 确保返回格式与前端期望一致
     console.log("API Response:", queryData);

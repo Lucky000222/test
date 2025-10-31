@@ -179,10 +179,17 @@ export default function Home() {
       const ts = Date.now().toString();
       const url = `/api/validate-wallet?address=${walletAddress}&timestamp=${ts}`;
       const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.message || '验证失败');
-      }
+      const data = await res.text();
+      console.log(data, "data");
+
+      let messageObj = JSON.parse(data);
+      // 获取token
+      let message = messageObj.data.message;
+      console.log("message", message);
+      // if (!res.ok) {
+      //   throw new Error(data?.message || '验证失败');
+      // }
+
       // 兼容多种返回结构
       if (typeof data?.keyless === 'boolean') {
         setValidationMessage(data.keyless ? '该地址为无私钥（合约）地址' : '该地址不是无私钥地址');
@@ -190,7 +197,7 @@ export default function Home() {
         setValidationMessage(data.data.isContract ? '该地址为无私钥（合约）地址' : '该地址不是无私钥地址');
       } else {
         setValidationMessage('验证完成');
-        console.log('validate-wallet response:', data);
+        // console.log('validate-wallet response:', data);
       }
     } catch (err) {
       setValidationMessage(err?.message || '请求失败');
