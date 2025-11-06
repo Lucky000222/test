@@ -17,24 +17,24 @@ export async function GET(request) {
 
   try {
     // 获取代理 IP
-    const ipData = await getIP();
-    console.log("IP Data:  ", ipData);
-    if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
-      return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
-    }
+    // const ipData = await getIP();
+    // console.log("IP Data:  ", ipData);
+    // if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
+    //   return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
+    // }
 
-    // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
-    let proxyUrl;
-    if (typeof ipData === 'string') {
-      // 如果是字符串格式，直接使用
-      proxyUrl = `http://${ipData}`;
-    } else if (ipData?.ip && ipData?.port) {
-      // 如果是对象格式，提取 ip 和 port
-      proxyUrl = `http://${ipData.ip}:${ipData.port}`;
-    } else {
-      return Response.json({ error: "IP ERROR" }, { status: 400 });
-    }
-    console.log("使用代理URL: ", proxyUrl);
+    // // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
+    // let proxyUrl;
+    // if (typeof ipData === 'string') {
+    //   // 如果是字符串格式，直接使用
+    //   proxyUrl = `http://${ipData}`;
+    // } else if (ipData?.ip && ipData?.port) {
+    //   // 如果是对象格式，提取 ip 和 port
+    //   proxyUrl = `http://${ipData.ip}:${ipData.port}`;
+    // } else {
+    //   return Response.json({ error: "IP ERROR" }, { status: 400 });
+    // }
+    // console.log("使用代理URL: ", proxyUrl);
 
     const targetUrl = `https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=${address}&projectId=meme_100567380&timestamp=${timestamp}`;
 
@@ -130,3 +130,4 @@ export async function GET(request) {
     return Response.json({ error: "Internal server error", details: error.message }, { status: 500 });
   }
 }
+
