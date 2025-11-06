@@ -174,33 +174,60 @@ export default function Home() {
     e.preventDefault();
     setSubmitting(true);
     setValidationMessage('');
+
+    // 验证所有字段不能为空
+    if (!xHandle || !xHandle.trim()) {
+      setValidationMessage('X HANDLE CANNOT BE EMPTY');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!tweetLink || !tweetLink.trim()) {
+      setValidationMessage('TWEET LINK CANNOT BE EMPTY');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!walletAddress || !walletAddress.trim()) {
+      setValidationMessage('BINANCE KEYLESS WALLET ADDRESS CANNOT BE EMPTY');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      // 使用毫秒级时间戳；若后端需要秒，可改为 Math.floor(Date.now() / 1000)
       const ts = Date.now().toString();
+
+      // const queryResponse = await fetch("https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=" + walletAddress + "&projectId=meme_100567380&timestamp=" + ts,)
+
+      // const queryData = await queryResponse.text();
+
+      // 返回结果 - 确保返回格式与前端期望一致
+      // console.log("前端 Response:", queryData);
+
+
+      // 使用毫秒级时间戳；若后端需要秒，可改为 Math.floor(Date.now() / 1000)
       const url = `/api/validate-wallet?address=${walletAddress}&timestamp=${ts}`;
       const res = await fetch(url, { method: 'GET', cache: 'no-store' });
       const data = await res.text();
-      console.log(data, "data");
-
+      console.log("data", data);
+      let message = null;
       let messageObj = JSON.parse(data);
       // 获取token
-      let message = messageObj.data.message;
-      console.log("message", message);
-      // if (!res.ok) {
-      //   throw new Error(data?.message || '验证失败');
-      // }
+      message = messageObj.message;
+      // console.log("message", message);
+
 
       // 兼容多种返回结构
-      if (typeof data?.keyless === 'boolean') {
-        setValidationMessage(data.keyless ? '该地址为无私钥（合约）地址' : '该地址不是无私钥地址');
-      } else if (typeof data?.data?.isContract === 'boolean') {
-        setValidationMessage(data.data.isContract ? '该地址为无私钥（合约）地址' : '该地址不是无私钥地址');
+      if (message == true) {
+        setValidationMessage('SUBMIT SUCCESS');
+      } else if (message == false) {
+        setValidationMessage('YOUR ADDRESS IS NOT A BINANCE KEYLESS WALLET ADDRESS, PLEASE RE-ENTER');
       } else {
-        setValidationMessage('验证完成');
-        // console.log('validate-wallet response:', data);
+        setValidationMessage('SUBMIT FAILED, PLEASE TRY AGAIN LATER');
       }
+
     } catch (err) {
-      setValidationMessage(err?.message || '请求失败');
+      setValidationMessage(err?.message || 'REQUEST ERROR');
     } finally {
       setSubmitting(false);
     }
@@ -224,59 +251,71 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* 动态渐变背景 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-orange-950/10"></div>
+
+      {/* 动态网格背景 */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(251, 146, 60, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(251, 146, 60, 0.05) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          animation: 'gridMove 20s linear infinite'
+        }}></div>
+      </div>
+
+      {/* 浮动粒子效果 */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(30)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-orange-400/10 blur-sm"
+            style={{
+              width: Math.random() * 4 + 2 + 'px',
+              height: Math.random() * 4 + 2 + 'px',
+              left: Math.random() * 100 + '%',
+              top: Math.random() * 100 + '%',
+              animation: `float ${Math.random() * 15 + 10}s ease-in-out infinite`,
+              animationDelay: Math.random() * 5 + 's'
+            }}
+          ></div>
+        ))}
+      </div>
+
+      {/* 装饰性几何图形 */}
+      <div className="absolute top-20 left-10 w-40 h-40 border border-orange-400/70 rotate-45 animate-pulse pointer-events-none"></div>
+      <div className="absolute bottom-20 right-10 w-32 h-32 border border-orange-400/70 rotate-12 animate-pulse pointer-events-none" style={{ animationDelay: '1s' }}></div>
+      <div className="absolute top-1/2 right-20 w-20 h-20 border border-orange-400/70 -rotate-45 animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-1/3 left-20 w-24 h-24 border border-orange-400/70 rotate-45 animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
+
       {/* 导航栏 */}
       <nav className="absolute top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm border-b border-orange-400/20">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="text-orange-400 pixel-font-large">
+            <div className="text-orange-400 pixel-font-large alpha-glow">
               ALPHA
-            </div>
-            <div className="flex space-x-6">
-              <a href="#" className="text-orange-400 hover:text-orange-300 transition-colors pixel-font-small">
-                首页
-              </a>
-              <a href="#" className="text-orange-400 hover:text-orange-300 transition-colors pixel-font-small">
-                关于
-              </a>
-              <a href="#" className="text-orange-400 hover:text-orange-300 transition-colors pixel-font-small">
-                联系
-              </a>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* 字母内容区域，避开导航栏 */}
-      <div className="pt-16">
-        {wordPositions.map(({ word, id, top, left, batchIndex, showDelay, hideDelay, animationDuration }) => (
-          <div
-            key={id}
-            className="absolute text-orange-400 pixel-font-medium twinkle-word"
-            style={{
-              top: `${top}%`,
-              left: `${left}%`,
-              opacity: 0, // 初始隐藏
-              animation: `
-                twinkle ${animationDuration}s ease-in-out infinite ${showDelay}s,
-                fadeIn 0.5s ease-out ${showDelay}s forwards,
-                fadeOut 1s ease-in ${hideDelay}s forwards
-              `,
-            }}
-          >
-            ${word}
-          </div>
-        ))}
-      </div>
-
       {/* 中间的表单框 */}
       <div className="fixed inset-0 flex items-center justify-center z-20 pt-16">
-        <div className="bg-black/90 backdrop-blur-md border-2 border-orange-400/50 rounded-lg p-8 w-full max-w-xl mx-4 shadow-[0_0_20px_rgba(251,146,60,0.3)]">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="relative bg-black/90 backdrop-blur-md border-2 border-orange-400/50 rounded-lg p-8 w-full max-w-xl mx-4 shadow-[0_0_30px_rgba(251,146,60,0.4)] form-container">
+          {/* 边框光晕动画 */}
+          <div className="absolute inset-0 rounded-lg border-2 border-orange-400/30 animate-border-glow pointer-events-none"></div>
+
+          <h2 className="text-orange-400 pixel-font-medium text-center mb-6 relative z-10">
+            EXCLUSIVE AIRDROP FOR BINANCE KEYLESS WALLET
+          </h2>
+          <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
             <div>
               <input
                 type="text"
                 placeholder="X HANDLE"
-                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-colors"
+                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-all duration-300 focus:shadow-[0_0_15px_rgba(251,146,60,0.5)] focus:bg-black/70"
                 value={xHandle}
                 onChange={(e) => setXHandle(e.target.value)}
               />
@@ -285,7 +324,7 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="TWEET LINK"
-                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-colors"
+                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-all duration-300 focus:shadow-[0_0_15px_rgba(251,146,60,0.5)] focus:bg-black/70"
                 value={tweetLink}
                 onChange={(e) => setTweetLink(e.target.value)}
               />
@@ -294,7 +333,7 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="BINANCE KEYLESS WALLET ADDRESS"
-                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-colors"
+                className="w-full px-4 py-3 bg-black/50 border-2 border-orange-400/30 rounded focus:border-orange-400 focus:outline-none text-orange-400 placeholder-orange-400/50 pixel-font-medium transition-all duration-300 focus:shadow-[0_0_15px_rgba(251,146,60,0.5)] focus:bg-black/70"
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
               />
@@ -302,9 +341,10 @@ export default function Home() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-orange-400/20 border-2 border-orange-400 rounded text-orange-400 pixel-font-medium hover:bg-orange-400/30 hover:shadow-[0_0_15px_rgba(251,146,60,0.5)] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="relative w-full py-3 bg-orange-400/20 border-2 border-orange-400 rounded text-orange-400 pixel-font-medium hover:bg-orange-400/30 hover:shadow-[0_0_25px_rgba(251,146,60,0.7)] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden group"
             >
-              {submitting ? 'VALIDATING…' : 'SUBMIT'}
+              <span className="relative z-10">{submitting ? 'VALIDATING…' : 'SUBMIT'}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/0 via-orange-400/30 to-orange-400/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </button>
             {validationMessage && (
               <p className="text-center text-orange-300 pixel-font-small">{validationMessage}</p>

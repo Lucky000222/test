@@ -247,6 +247,99 @@ body {
     0 0 15px rgba(251, 146, 60, 0.4);
 }
 
+/* 网格移动动画 */
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+/* 粒子浮动动画 */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.2;
+  }
+
+  25% {
+    transform: translate(20px, -20px) scale(1.2);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translate(-10px, 10px) scale(0.8);
+    opacity: 0.3;
+  }
+
+  75% {
+    transform: translate(15px, 15px) scale(1.1);
+    opacity: 0.35;
+  }
+}
+
+/* 边框光晕动画 */
+@keyframes borderGlow {
+
+  0%,
+  100% {
+    border-color: rgba(251, 146, 60, 0.3);
+    box-shadow: 0 0 10px rgba(251, 146, 60, 0.2);
+  }
+
+  50% {
+    border-color: rgba(251, 146, 60, 0.6);
+    box-shadow: 0 0 25px rgba(251, 146, 60, 0.5);
+  }
+}
+
+.animate-border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* 表单容器增强效果 */
+.form-container {
+  position: relative;
+}
+
+.form-container::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 0.5rem;
+  padding: 2px;
+  background: linear-gradient(45deg,
+      rgba(251, 146, 60, 0.5),
+      rgba(251, 146, 60, 0.2),
+      rgba(251, 146, 60, 0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderRotate 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.form-container:hover::before {
+  opacity: 0.5;
+}
+
+@keyframes borderRotate {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+
 /* 真正的像素化字体样式 - 8位复古风格 */
 .pixel-font {
   font-family: 'Press Start 2P', 'Courier New', 'Monaco', 'Menlo', monospace !important;
