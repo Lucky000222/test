@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 import { getIP } from '../proxy/getIp';
-import HttpsProxyAgent from 'https-proxy-agent';
-import https from 'https';
+
 export async function GET(request) {
   console.log("API route called with URL:", request.url);
 
@@ -17,64 +16,45 @@ export async function GET(request) {
   }
 
   try {
-    const ipData = await getIP();
-    console.log("IP Data:  ", ipData);
-    if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
-      return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
-    }
+    // const ipData = await getIP();
+    // console.log("IP Data:  ", ipData);
+    // if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
+    //   return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
+    // }
 
-    // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
-    let proxyUrl;
-    if (typeof ipData === 'string') {
-      // 如果是字符串格式，直接使用
-      proxyUrl = `http://${ipData}`;
-    } else if (ipData?.ip && ipData?.port) {
-      // 如果是对象格式，提取 ip 和 port
-      proxyUrl = `http://${ipData.ip}:${ipData.port}`;
-    } else {
-      return Response.json({ error: "IP ERROR" }, { status: 400 });
-    }
-    console.log("使用代理URL: ", proxyUrl);
-
-    const proxyAgent = new HttpsProxyAgent(proxyUrl);
-    console.log(address, timestamp);
+    // // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
+    // let proxyUrl;
+    // if (typeof ipData === 'string') {
+    //   // 如果是字符串格式，直接使用
+    //   proxyUrl = `http://${ipData}`;
+    // } else if (ipData?.ip && ipData?.port) {
+    //   // 如果是对象格式，提取 ip 和 port
+    //   proxyUrl = `http://${ipData.ip}:${ipData.port}`;
+    // } else {
+    //   return Response.json({ error: "IP ERROR" }, { status: 400 });
+    // }
+    // console.log("使用代理URL: ", proxyUrl);
 
     const targetUrl = `https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=${address}&projectId=meme_100567380&timestamp=${timestamp}`;
 
-    // 使用原生 https 模块通过代理发送请求
-    const queryDataText = await new Promise((resolve, reject) => {
-      const urlObj = new URL(targetUrl);
-      const options = {
-        hostname: urlObj.hostname,
-        port: urlObj.port || 443,
-        path: urlObj.pathname + urlObj.search,
-        method: 'GET',
-        agent: proxyAgent,
-        headers: {
-          'accept': 'application/json, text/plain, */*',
-          'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'origin': 'https://four.meme',
-          'referer': 'https://four.meme/',
-        }
-      };
-
-      const req = https.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          resolve({ statusCode: res.statusCode, data });
-        });
-      });
-
-      req.on('error', (error) => {
-        reject(error);
-      });
-
-      req.end();
+    // Edge Runtime 使用 fetch API，通过代理发送请求
+    // 注意：Edge Runtime 不支持传统代理，这里直接使用 fetch
+    // 如果需要代理功能，可能需要使用 Cloudflare Workers 的代理功能或其他方案
+    const fetchResponse = await fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'origin': 'https://four.meme',
+        'referer': 'https://four.meme/',
+      }
     });
+
+    const queryDataText = {
+      statusCode: fetchResponse.status,
+      data: await fetchResponse.text()
+    };
 
     console.log("响应状态码: ", queryDataText.statusCode);
     console.log("后端API返回:  ", queryDataText.data);
