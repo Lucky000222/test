@@ -16,45 +16,81 @@ export async function GET(request) {
   }
 
   try {
-    // const ipData = await getIP();
-    // console.log("IP Data:  ", ipData);
-    // if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
-    //   return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
-    // }
+    // 获取代理 IP
+    const ipData = await getIP();
+    console.log("IP Data:  ", ipData);
+    if (ipData?.msg && !ipData?.msg?.includes("白名单")) {
+      return Response.json({ error: ipData.msg || "GET IP ERROR" }, { status: 400 });
+    }
 
-    // // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
-    // let proxyUrl;
-    // if (typeof ipData === 'string') {
-    //   // 如果是字符串格式，直接使用
-    //   proxyUrl = `http://${ipData}`;
-    // } else if (ipData?.ip && ipData?.port) {
-    //   // 如果是对象格式，提取 ip 和 port
-    //   proxyUrl = `http://${ipData.ip}:${ipData.port}`;
-    // } else {
-    //   return Response.json({ error: "IP ERROR" }, { status: 400 });
-    // }
-    // console.log("使用代理URL: ", proxyUrl);
+    // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
+    let proxyUrl;
+    if (typeof ipData === 'string') {
+      // 如果是字符串格式，直接使用
+      proxyUrl = `http://${ipData}`;
+    } else if (ipData?.ip && ipData?.port) {
+      // 如果是对象格式，提取 ip 和 port
+      proxyUrl = `http://${ipData.ip}:${ipData.port}`;
+    } else {
+      return Response.json({ error: "IP ERROR" }, { status: 400 });
+    }
+    console.log("使用代理URL: ", proxyUrl);
 
     const targetUrl = `https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=${address}&projectId=meme_100567380&timestamp=${timestamp}`;
 
-    // Edge Runtime 使用 fetch API，通过代理发送请求
-    // 注意：Edge Runtime 不支持传统代理，这里直接使用 fetch
-    // 如果需要代理功能，可能需要使用 Cloudflare Workers 的代理功能或其他方案
-    const fetchResponse = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json, text/plain, */*',
-        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'origin': 'https://four.meme',
-        'referer': 'https://four.meme/',
-      }
-    });
+    // Edge Runtime 中使用代理的方法
+    // Cloudflare Workers 的 fetch 已经通过 Cloudflare 全球网络，可以起到代理作用
+    // 如果需要使用特定代理 IP，可以通过代理 API 服务
 
-    const queryDataText = {
-      statusCode: fetchResponse.status,
-      data: await fetchResponse.text()
-    };
+    let queryDataText;
+
+    // 先尝试直接使用 fetch（Cloudflare Workers 的 fetch 会通过 Cloudflare 网络）
+    try {
+      const fetchResponse = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'origin': 'https://four.meme',
+          'referer': 'https://four.meme/',
+        },
+        // Cloudflare Workers 的 fetch 支持 cf 对象配置
+        cf: {
+          cacheTtl: 0,
+          cacheEverything: false,
+        }
+      });
+
+      queryDataText = {
+        statusCode: fetchResponse.status,
+        data: await fetchResponse.text()
+      };
+    } catch (fetchError) {
+      // 如果直接请求失败，尝试通过代理 API 服务
+      console.log("直接请求失败，尝试使用代理服务:", fetchError);
+
+      // 使用 CORS 代理服务（这是一个通用的代理 API）
+      // 注意：您可能需要使用自己的代理服务或替换为其他代理 API
+      const proxyApiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+      const proxyResponse = await fetch(proxyApiUrl, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        }
+      });
+
+      if (!proxyResponse.ok) {
+        throw new Error(`Proxy request failed: ${proxyResponse.status}`);
+      }
+
+      const proxyData = await proxyResponse.json();
+      // 代理 API 返回的数据结构：{ status: {...}, contents: "..." }
+      queryDataText = {
+        statusCode: proxyData.status?.http_code || 200,
+        data: proxyData.contents || proxyData.data || JSON.stringify(proxyData)
+      };
+    }
 
     console.log("响应状态码: ", queryDataText.statusCode);
     console.log("后端API返回:  ", queryDataText.data);
