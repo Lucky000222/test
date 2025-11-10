@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 import { getIP } from '../proxy/getIp';
-import HttpsProxyAgent from 'https-proxy-agent';
-import https from 'https';
+
 export async function GET(request) {
   console.log("API route called with URL:", request.url);
 
@@ -26,55 +25,77 @@ export async function GET(request) {
     // 构造代理URL：ipData 可能是字符串 "ip:port" 或对象 {ip: "xxx", port: "xxx"}
     let proxyUrl;
     if (typeof ipData === 'string') {
-      // 如果是字符串格式，直接使用
       proxyUrl = `http://${ipData}`;
     } else if (ipData?.ip && ipData?.port) {
-      // 如果是对象格式，提取 ip 和 port
       proxyUrl = `http://${ipData.ip}:${ipData.port}`;
     } else {
       return Response.json({ error: ipData }, { status: 400 });
     }
     console.log("使用代理URL: ", proxyUrl);
 
-    const proxyAgent = new HttpsProxyAgent(proxyUrl);
-    console.log(address, timestamp);
-
     const targetUrl = `https://four.meme/mapi/defi/v2/public/wallet-direct/wallet/address/verify?address=${address}&projectId=meme_100567380&timestamp=${timestamp}`;
 
-    // 使用原生 https 模块通过代理发送请求
-    const queryDataText = await new Promise((resolve, reject) => {
-      const urlObj = new URL(targetUrl);
-      const options = {
-        hostname: urlObj.hostname,
-        port: urlObj.port || 443,
-        path: urlObj.pathname + urlObj.search,
+    // Edge Runtime 兼容的代理方案
+    // 方案1: 使用支持代理的 HTTP API 服务
+    // 方案2: 直接使用 fetch（Cloudflare Workers 的 fetch 已经通过 Cloudflare 网络）
+
+    let queryDataText;
+
+    // 尝试使用代理 API 服务（如果可用）
+    // 注意：需要替换为实际支持代理的 API 服务
+    try {
+      // 使用支持代理的 API 服务
+      // 格式: https://proxy-api.com/proxy?target=URL&proxy=PROXY_URL
+      // 这里使用一个通用的代理服务模式
+      const proxyApiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+      const proxyResponse = await fetch(proxyApiUrl, {
         method: 'GET',
-        agent: proxyAgent,
+        headers: {
+          'accept': 'application/json',
+        },
+        // Cloudflare Workers 的 fetch 支持 cf 配置
+        cf: {
+          cacheTtl: 0,
+          cacheEverything: false,
+        }
+      });
+
+      if (!proxyResponse.ok) {
+        throw new Error(`Proxy API failed: ${proxyResponse.status}`);
+      }
+
+      const proxyData = await proxyResponse.json();
+      // 代理服务返回格式: { status: {...}, contents: "..." }
+      queryDataText = {
+        statusCode: proxyData.status?.http_code || 200,
+        data: proxyData.contents || proxyData.data || JSON.stringify(proxyData)
+      };
+    } catch (proxyError) {
+      console.log("代理服务失败，尝试直接请求:", proxyError);
+
+      // 方案2: 直接使用 fetch（Cloudflare Workers 的 fetch 已经通过 Cloudflare 网络）
+      // 这可能会被目标 API 阻止，但可以尝试
+      const directResponse = await fetch(targetUrl, {
+        method: 'GET',
         headers: {
           'accept': 'application/json, text/plain, */*',
           'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
           'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
           'origin': 'https://four.meme',
           'referer': 'https://four.meme/',
+        },
+        cf: {
+          cacheTtl: 0,
+          cacheEverything: false,
         }
+      });
+
+      queryDataText = {
+        statusCode: directResponse.status,
+        data: await directResponse.text()
       };
-
-      const req = https.request(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          resolve({ statusCode: res.statusCode, data });
-        });
-      });
-
-      req.on('error', (error) => {
-        reject(error);
-      });
-
-      req.end();
-    });
+    }
 
     console.log("响应状态码: ", queryDataText.statusCode);
     console.log("后端API返回:  ", queryDataText.data);
